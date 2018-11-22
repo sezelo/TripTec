@@ -1,0 +1,317 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+using TRIP.App_Start;
+using MongoDB.Driver;
+
+using TRIP.Models;
+
+namespace TRIP.Controllers
+{
+    public class DestinationsController : Controller
+    {
+        private MongoDBContext dbcontext;
+        private IMongoCollection<DestinationsModel> DestinationsCollection;
+
+        // GET: Destinations
+        public DestinationsController()
+        {
+            dbcontext = new MongoDBContext();
+            DestinationsCollection = dbcontext.database.GetCollection<DestinationsModel>("Destinations");
+        }
+        public ActionResult Index()
+        {
+            List<DestinationsModel> Destinations = DestinationsCollection.AsQueryable<DestinationsModel>().ToList();
+            return View(Destinations);
+        }
+
+
+        [HttpGet]
+        public ActionResult Create()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public ActionResult Create(DestinationsModel Destinations)
+        {
+            try
+            {
+                DestinationsCollection.InsertOneAsync(Destinations);
+
+                return RedirectToAction("Index");
+            }
+            catch
+            {
+                return View();
+            }
+        }
+
+
+
+
+        public ActionResult Edit(string id)
+        {
+           // var DestinationsId = new string(id);
+            var Destinations = DestinationsCollection.AsQueryable<DestinationsModel>().SingleOrDefault(x => x._id == id);
+            return View(Destinations);
+
+        }
+
+        [HttpPost]
+        public ActionResult Edit(string id, DestinationsModel Destinations)
+        {
+            try
+            {
+                var filter = Builders<DestinationsModel>.Filter.Eq("_id", id);
+                var update = Builders<DestinationsModel>.Update.Set("Lat", Destinations.Lat).Set("Long",Destinations.Long).
+                    Set("Direction", Destinations.Direction).Set("Description", Destinations.Description).Set("Activities", Destinations.Activities).
+                    Set("PricePP", Destinations.PricePP);//Se puede agregar mas haciendo un .Set("",) extra
+                var result = DestinationsCollection.UpdateOne(filter, update);
+
+                return RedirectToAction("Index");
+            }
+            catch
+            {
+                return View();
+            }
+        }
+
+
+
+
+
+        public ActionResult Delete(string id)
+        {
+            var DestinationsId = id;
+            var Destinations = DestinationsCollection.AsQueryable<DestinationsModel>().SingleOrDefault(x => x._id == DestinationsId);
+            return View(Destinations);
+        }
+
+        // POST: Funcionarios/Delete/5
+        [HttpPost]
+        public ActionResult Delete(string id, DestinationsModel Destinations)
+        {
+            try
+            {
+                DestinationsCollection.DeleteOne(Builders<DestinationsModel>.Filter.Eq("_id", id));
+
+                return RedirectToAction("Index");
+            }
+            catch
+            {
+                return View();
+            }
+        }
+
+    }
+}
+namespace TRIP.Controllers
+{
+    public class EmployeeController : Controller
+    {
+
+        private MongoDBContext dbcontext;
+        private IMongoCollection<EmployeeModel> EmployeeCollection;
+
+        public EmployeeController()
+        {
+            dbcontext = new MongoDBContext();
+            EmployeeCollection = dbcontext.database.GetCollection<EmployeeModel>("Employee");
+        }
+
+        // GET: Employee
+        public ActionResult Index()
+        {
+            List<EmployeeModel> Employee =EmployeeCollection.AsQueryable<EmployeeModel>().ToList();
+            return View(Employee);
+            
+        }
+
+        public ActionResult Logged()
+        {
+            return View();
+        }
+
+        public ActionResult Login()
+        {
+            return View();
+        }
+        [HttpPost]
+        public ActionResult Login(EmployeeModel user, string password)
+        {
+            var usr = EmployeeCollection.AsQueryable<EmployeeModel>().SingleOrDefault(u => u.UserName == user.UserName && u.Password == password);
+            //var usr = funcionarioCollection.FindAsync(u => u.Nombre == user.Nombre && u.Contraseña == user.Contraseña);
+
+            if (usr != null)
+            {
+                TempData["_id"] = usr._id;
+
+                return RedirectToAction("Index", "Destinations"); //crear una nueva vista para redirigir despues de accesar
+            }
+            else
+            {
+                ModelState.AddModelError("", "Nombre de usuario o contraseña incorrectos");
+                return View();
+            } 
+            
+
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+
+namespace TRIP.Controllers
+{
+    public class HomeController : Controller
+    {
+        public ActionResult Index()
+        {
+            return View();
+        }
+
+        public ActionResult About()
+        {
+            ViewBag.Message = "Your application description page.";
+
+            return View();
+        }
+
+        public ActionResult Contact()
+        {
+            ViewBag.Message = "Your contact page.";
+
+            return View();
+        }
+    }
+}
+namespace TRIP.Controllers
+{
+    public class ManagerController : Controller
+    {
+        // GET: Manager
+      
+        private MongoDBContext dbcontext;
+        private IMongoCollection<ManagerModel> ManagerCollection;
+
+        public ManagerController()
+        {
+            dbcontext = new MongoDBContext();
+            ManagerCollection = dbcontext.database.GetCollection<ManagerModel>("Manager");
+        }
+
+        // GET: Employee
+        public ActionResult Index()
+        {
+            List<ManagerModel> Manager = ManagerCollection.AsQueryable<ManagerModel>().ToList();
+            return View(Manager);
+
+        }
+
+        public ActionResult Logged()
+        {
+            return View();
+        }
+
+        public ActionResult Login()
+        {
+            return View();
+        }
+        [HttpPost]
+        public ActionResult Login(ManagerModel user, string password)
+        {
+            var usr = ManagerCollection.AsQueryable<ManagerModel>().SingleOrDefault(u => u.UserName == user.UserName && u.Password == password);
+            //var usr = funcionarioCollection.FindAsync(u => u.Nombre == user.Nombre && u.Contraseña == user.Contraseña);
+
+            if (usr != null)
+            {
+                TempData["_id"] = usr._id;
+
+                return RedirectToAction("Login", "Customer"); //crear una nueva vista para redirigir despues de accesar
+            }
+            else
+            {
+                ModelState.AddModelError("", "Nombre de usuario o contraseña incorrectos");
+                return View();
+            }
+            
+
+        }
+    }
+}
+namespace TRIP.Controllers
+{
+    public class ReservationController : Controller
+    {
+        private MongoDBContext dbcontext;
+        private IMongoCollection<ReservationModel> ReservationCollection;
+        // GET: Reservation
+
+
+        public ReservationController()
+        {
+            dbcontext = new MongoDBContext();
+            ReservationCollection = dbcontext.database.GetCollection<ReservationModel>("Reservation");
+           
+        }
+        public ActionResult Index()
+        {
+            List<ReservationModel> Reservation = ReservationCollection.AsQueryable<ReservationModel>().ToList();
+            return View(Reservation);
+
+            return View();
+        }
+
+
+
+
+
+
+
+        [HttpGet]
+        public ActionResult Create()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public ActionResult Create(ReservationModel Reservation)
+        {
+            try
+            {
+                ReservationCollection.InsertOneAsync(Reservation);
+
+                return RedirectToAction("Reservation");
+            }
+            catch
+            {
+                return View();
+            }
+        }
+
+
+        //FUNCION PARA MOSTRAR RESERVACIONES SEGUN EL ID DEL CLIENTE
+        public async System.Threading.Tasks.Task<ActionResult> HistorialAsync()
+        {
+            if (TempData["_id"] != null)
+            {
+                string _id = (string)TempData["_id"];
+                var filter = Builders<ReservationModel>.Filter.Eq("_id", _id);
+                List<ReservationModel> result = await ReservationCollection.Find(filter).ToListAsync();
+                TempData["cedula2"] = _id;
+                return View(result);
+
+            }
+            else
+            {
+                return RedirectToAction("Login","Customer");
+            }
+        }
+    }
+}
